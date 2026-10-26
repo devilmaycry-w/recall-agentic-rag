@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FileText, Loader2, RotateCcw, Trash2, Upload, X } from "lucide-react";
 import { PageHeader } from "@/components/app-shell";
-import { can, useStore } from "@/lib/store";
-import { CHUNKS, type Doc, type DocStatus } from "@/lib/mock-data";
+import { can, useStore, type Doc } from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/documents")({
+export const Route = createFileRoute("/_authenticated/documents")({
   head: () => ({
     meta: [
       { title: "Documents · Recall Agentic RAG" },
@@ -20,26 +20,62 @@ export const Route = createFileRoute("/documents")({
   component: Documents,
 });
 
-const STATUS: Record<DocStatus, string> = {
+const STATUS: Record<Doc["status"], string> = {
   Pending: "border-muted-foreground/30 text-muted-foreground",
   Processing: "border-info/40 bg-info/10 text-info",
   Indexed: "border-success/40 bg-success/10 text-success",
   Failed: "border-destructive/40 bg-destructive/10 text-destructive",
 };
 
+interface ChunkRow { id: string; page: number; content: string; token_count: number }
+
 function Documents() {
-  const { docs, role, uploadFiles, retryDoc, deleteDoc } = useStore();
+  const { docs, role, uploadFiles, retryDoc, deleteDoc, org } = useStore();
   const [drag, setDrag] = useState(false);
   const [inspect, setInspect] = useState<Doc | null>(null);
+  const [chunks, setChunks] = useState<ChunkRow[]>([]);
+  const [chunkCounts, setChunkCounts] = useState<Record<string, { n: number; tokens: number }>>({});
+  const [uploading, setUploading] = useState(false);
   const allowed = can.upload(role);
 
-  const accept = (files: FileList | null) => {
+  // Chunk counts per indexed document in this workspace.
+  useEffect(() => {
+    if (!org) return;
+    supabase
+      .from("document_chunks")
+      .select("document_id, token_count")
+      .eq("org_id", org.id)
+      .then(({ data }) => {
+        const counts: Record<string, { n: number; tokens: number }> = {};
+        for (const c of data ?? []) {
+          const entry = (counts[c.document_id] ??= { n: 0, tokens: 0 });
+          entry.n += 1;
+          entry.tokens += c.token_count;
+        }
+        setChunkCounts(counts);
+      });
+  }, [org, docs]);
+
+  // Load chunks when the inspector opens.
+  useEffect(() => {
+    if (!inspect) { setChunks([]); return; }
+    supabase
+      .from("document_chunks")
+      .select("id, page, content, token_count")
+      .eq("document_id", inspect.id)
+      .order("page", { ascending: true })
+      .then(({ data }) => setChunks(data ?? []));
+  }, [inspect]);
+
+  const accept = async (files: FileList | null) => {
     if (!files) return;
     const ok = [...files].filter((f) => /\.(pdf|txt|md|markdown)$/i.test(f.name));
-    if (ok.length) uploadFiles(ok);
+    if (!ok.length) return;
+    setUploading(true);
+    try { await uploadFiles(ok); } finally { setUploading(false); }
   };
 
-  const counts = (["Pending", "Processing", "Indexed", "Failed"] as DocStatus[]).map((s) => [s, docs.filter((d) => d.status === s).length] as const);
+  const counts = (["Pending", "Processing", "Indexed", "Failed"] as Doc["status"][]).map((s) => [s, docs.filter((d) => d.status === s).length] as const);
 
   return (
     <div>
@@ -48,14 +84,16 @@ function Documents() {
         <label
           onDragOver={(e) => { e.preventDefault(); if (allowed) setDrag(true); }}
           onDragLeave={() => setDrag(false)}
-          onDrop={(e) => { e.preventDefault(); setDrag(false); if (allowed) accept(e.dataTransfer.files); }}
+          onDrop={(e) => { e.preventDefault(); setDrag(false); if (allowed) void accept(e.dataTransfer.files); }}
           className={cn("flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors",
-            drag ? "border-primary bg-primary/5" : "border-border hover:border-primary/40", !allowed && "cursor-not-allowed opacity-50")}
+            drag ? "border-primary bg-primary/5" : "border-border hover:border-primary/40", (!allowed || uploading) && "cursor-not-allowed opacity-50")}
         >
-          <Upload className="h-6 w-6 text-muted-foreground" />
-          <div className="mt-2 text-sm font-medium">{allowed ? "Drop PDF, TXT or Markdown files, or click to browse" : "Uploading requires Admin or Knowledge Manager"}</div>
-          <div className="mt-1 font-mono text-[11px] text-muted-foreground">chunk size ~180 tokens · overlap 20 · embedding: text-embedding (1536d)</div>
-          <input type="file" multiple accept=".pdf,.txt,.md,.markdown" className="hidden" disabled={!allowed} onChange={(e) => { accept(e.target.files); e.target.value = ""; }} />
+          {uploading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <Upload className="h-6 w-6 text-muted-foreground" />}
+          <div className="mt-2 text-sm font-medium">
+            {uploading ? "Uploading and indexing…" : allowed ? "Drop PDF, TXT or Markdown files, or click to browse" : "Uploading requires Admin or Knowledge Manager"}
+          </div>
+          <div className="mt-1 font-mono text-[11px] text-muted-foreground">chunk size ~180 tokens · embedding: text-embedding (1536d) · stored in your workspace only</div>
+          <input type="file" multiple accept=".pdf,.txt,.md,.markdown" className="hidden" disabled={!allowed || uploading} onChange={(e) => { void accept(e.target.files); e.target.value = ""; }} />
         </label>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -74,7 +112,7 @@ function Documents() {
             </thead>
             <tbody>
               {docs.map((d) => {
-                const chunks = CHUNKS.filter((c) => c.docId === d.id);
+                const cc = chunkCounts[d.id];
                 return (
                   <tr key={d.id} className="border-t border-border">
                     <td className="px-3 py-2.5">
@@ -95,15 +133,18 @@ function Documents() {
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-2.5 font-mono text-xs">{d.status === "Indexed" ? `${chunks.length} · ${chunks.reduce((a, c) => a + c.tokens, 0)} tok` : "—"}</td>
+                    <td className="px-3 py-2.5 font-mono text-xs">{d.status === "Indexed" && cc ? `${cc.n} · ${cc.tokens} tok` : "—"}</td>
                     <td className="px-3 py-2.5 font-mono text-[11px] text-muted-foreground">{d.uploadedAt}<br />{d.uploadedBy}</td>
                     <td className="px-3 py-2.5 text-right">
-                      {allowed && d.status === "Failed" && <button onClick={() => retryDoc(d.id)} aria-label="Retry" className="rounded p-1.5 hover:bg-accent"><RotateCcw className="h-4 w-4" /></button>}
-                      {allowed && <button onClick={() => deleteDoc(d.id)} aria-label="Delete" className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-destructive"><Trash2 className="h-4 w-4" /></button>}
+                      {allowed && d.status === "Failed" && <button onClick={() => void retryDoc(d.id)} aria-label="Retry" className="rounded p-1.5 hover:bg-accent"><RotateCcw className="h-4 w-4" /></button>}
+                      {allowed && <button onClick={() => void deleteDoc(d.id)} aria-label="Delete" className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-destructive"><Trash2 className="h-4 w-4" /></button>}
                     </td>
                   </tr>
                 );
               })}
+              {docs.length === 0 && (
+                <tr className="border-t border-border"><td colSpan={5} className="px-3 py-8 text-center text-sm text-muted-foreground">No documents yet — upload your first file above.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -121,15 +162,15 @@ function Documents() {
               <button onClick={() => setInspect(null)} aria-label="Close"><X className="h-4 w-4" /></button>
             </div>
             <div className="flex-1 space-y-3 overflow-y-auto p-4">
-              {CHUNKS.filter((c) => c.docId === inspect.id).map((c) => (
+              {chunks.map((c) => (
                 <div key={c.id} className="rounded border border-border bg-card p-3">
                   <div className="flex justify-between font-mono text-[10px] text-muted-foreground">
-                    <span>{c.id}</span><span>page {c.page} · {c.tokens} tokens</span>
+                    <span>{c.id.slice(0, 8)}</span><span>page {c.page} · {c.token_count} tokens</span>
                   </div>
-                  <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed">{c.text}</p>
+                  <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed">{c.content}</p>
                 </div>
               ))}
-              {CHUNKS.every((c) => c.docId !== inspect.id) && <p className="text-sm text-muted-foreground">No chunks — ingestion did not complete.</p>}
+              {chunks.length === 0 && <p className="text-sm text-muted-foreground">No chunks — ingestion did not complete.</p>}
             </div>
           </div>
         </div>

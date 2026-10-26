@@ -1,13 +1,14 @@
-import { Link, useLocation } from "@tanstack/react-router";
-import { Activity, BarChart3, Database, FileText, MessageSquare, Moon, ShieldCheck, Sun, Menu, X, Settings2 } from "lucide-react";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { Activity, BarChart3, Database, FileText, LogOut, MessageSquare, Moon, ShieldCheck, Sun, Menu, X, Settings2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import { can, useStore } from "@/lib/store";
-import type { Role } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { BackendStatus } from "@/components/backend-status";
+import { Button } from "@/components/ui/button";
 
 const NAV = [
-  { to: "/", label: "Assistant", icon: MessageSquare, gate: () => true },
+  { to: "/assistant", label: "Assistant", icon: MessageSquare, gate: () => true },
   { to: "/documents", label: "Documents", icon: FileText, gate: () => true },
   { to: "/sql", label: "SQL Tool", icon: Database, gate: () => true },
   { to: "/analytics", label: "Analytics & Evals", icon: BarChart3, gate: can.viewAnalytics },
@@ -15,18 +16,65 @@ const NAV = [
   { to: "/settings", label: "Backend Settings", icon: Settings2, gate: () => true },
 ] as const;
 
+function CreateWorkspace() {
+  const { createOrg } = useStore();
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setBusy(true);
+    try {
+      await createOrg(name.trim());
+      toast.success(`Workspace "${name.trim()}" created — you're its Admin.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not create the workspace.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="grid h-full place-items-center p-6">
+      <form onSubmit={submit} className="w-full max-w-sm rounded-lg border border-border bg-card p-5">
+        <ShieldCheck className="h-6 w-6 text-primary" />
+        <h1 className="mt-3 text-lg font-semibold">Create your workspace</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Your account isn't part of an organization yet. Create one to start uploading documents — or ask an Admin to add you to an existing workspace.
+        </p>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Acme Robotics"
+          className="mt-4 w-full rounded border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary/60"
+        />
+        <Button type="submit" className="mt-3 w-full" disabled={busy || name.trim().length < 2}>
+          Create workspace
+        </Button>
+      </form>
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
-  const { org, orgs, setOrgId, role, setRole, theme, toggleTheme, user } = useStore();
+  const { org, orgs, setOrgId, role, theme, toggleTheme, user, signOut, sessionReady } = useStore();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const sidebar = (
+  const handleSignOut = async () => {
+    await signOut();
+    navigate({ to: "/auth", replace: true });
+  };
+
+  const sidebar = org && (
     <aside className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
       <div className="flex items-center gap-2 px-4 py-4">
         <div className="grid h-8 w-8 place-items-center rounded bg-primary font-mono text-sm font-bold text-primary-foreground">≡R</div>
         <div>
           <div className="text-sm font-semibold leading-none">Recall</div>
-          <div className="font-mono text-[10px] text-muted-foreground">agentic rag · v0.9</div>
+          <div className="font-mono text-[10px] text-muted-foreground">agentic rag · v1.0</div>
         </div>
       </div>
       <div className="px-3">
@@ -39,7 +87,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
         </select>
         <div className="mt-2 flex items-center gap-1.5 rounded border border-success/30 bg-success/10 px-2 py-1 font-mono text-[10px] text-success">
-          <ShieldCheck className="h-3 w-3" /> tenant: {org.id} · {org.region}
+          <ShieldCheck className="h-3 w-3" /> tenant: {org.slug} · isolated
         </div>
       </div>
       <nav className="mt-4 flex-1 space-y-0.5 px-2">
@@ -65,16 +113,20 @@ export function AppShell({ children }: { children: ReactNode }) {
         })}
       </nav>
       <div className="border-t border-sidebar-border p-3">
-        <Link to="/settings" onClick={() => setOpen(false)} className="mb-4 block rounded border border-border px-2 py-2"><BackendStatus /></Link>
-        <label className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Your role (preview)</label>
-        <select value={role} onChange={(e) => setRole(e.target.value as Role)} className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm">
-          {(["Admin", "Knowledge Manager", "Member"] as Role[]).map((r) => <option key={r}>{r}</option>)}
-        </select>
-        <div className="mt-3 flex items-center justify-between">
-          <span className="truncate font-mono text-[11px] text-muted-foreground">{user}</span>
-          <button onClick={toggleTheme} aria-label="Toggle theme" className="rounded p-1.5 hover:bg-sidebar-accent">
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
+        <Link to="/settings" onClick={() => setOpen(false)} className="mb-3 block rounded border border-border px-2 py-2"><BackendStatus /></Link>
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="truncate font-mono text-[11px] text-muted-foreground">{user}</div>
+            <div className="font-mono text-[10px] text-primary">{role}</div>
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <button onClick={toggleTheme} aria-label="Toggle theme" className="rounded p-1.5 hover:bg-sidebar-accent">
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+            <button onClick={handleSignOut} aria-label="Sign out" className="rounded p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-destructive">
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
     </aside>
@@ -83,19 +135,23 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <div className="hidden md:block">{sidebar}</div>
-      {open && (
+      {open && org && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-background/80" onClick={() => setOpen(false)} />
           <div className="relative h-full w-64">{sidebar}</div>
         </div>
       )}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-3 border-b border-border px-4 py-2.5 md:hidden">
-          <button onClick={() => setOpen(!open)} aria-label="Menu">{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
-          <span className="text-sm font-semibold">{org.name}</span>
-          <span className="ml-auto font-mono text-[10px] text-muted-foreground">{role}</span>
-        </header>
-        <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
+        {org && (
+          <header className="flex items-center gap-3 border-b border-border px-4 py-2.5 md:hidden">
+            <button onClick={() => setOpen(!open)} aria-label="Menu">{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
+            <span className="text-sm font-semibold">{org.name}</span>
+            <span className="ml-auto font-mono text-[10px] text-muted-foreground">{role}</span>
+          </header>
+        )}
+        <main className="min-h-0 flex-1 overflow-y-auto">
+          {!sessionReady ? null : !org ? <CreateWorkspace /> : children}
+        </main>
       </div>
     </div>
   );
@@ -119,7 +175,7 @@ export function Locked({ need }: { need: string }) {
       <div>
         <ShieldCheck className="mx-auto h-8 w-8 text-muted-foreground" />
         <h2 className="mt-3 font-semibold">Restricted</h2>
-        <p className="mt-1 text-sm text-muted-foreground">This view requires the {need} role. Switch roles in the sidebar to preview it.</p>
+        <p className="mt-1 text-sm text-muted-foreground">This view requires the {need} role in the current workspace.</p>
       </div>
     </div>
   );

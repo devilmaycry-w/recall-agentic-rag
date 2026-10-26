@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Locked, PageHeader } from "@/components/app-shell";
 import { can, useStore } from "@/lib/store";
 
-export const Route = createFileRoute("/audit")({
+export const Route = createFileRoute("/_authenticated/audit")({
   head: () => ({
     meta: [
       { title: "Audit Log · Recall Agentic RAG" },
@@ -18,6 +18,7 @@ export const Route = createFileRoute("/audit")({
 
 function Audit() {
   const { audit, role, org } = useStore();
+  if (!org) return null;
   if (!can.viewAudit(role)) return <Locked need="Admin" />;
   return (
     <div>

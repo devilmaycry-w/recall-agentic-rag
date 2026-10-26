@@ -4,7 +4,7 @@ import { Locked, PageHeader } from "@/components/app-shell";
 import { can, useStore } from "@/lib/store";
 import { BENCHMARK, COST_LATENCY } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/analytics")({
+export const Route = createFileRoute("/_authenticated/analytics")({
   head: () => ({
     meta: [
       { title: "Analytics & Evals · Recall Agentic RAG" },

@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useStore } from "@/lib/store";
 import { curlExample, fastApiExample } from "@/lib/backend";
 
-export const Route = createFileRoute("/settings")({
+export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [
     { title: "Backend Settings · Recall" },
     { name: "description", content: "Configure a local FastAPI or Ollama RAG backend for the Recall assistant." },
@@ -27,7 +27,7 @@ function Settings() {
   const [copied, setCopied] = useState<string | null>(null);
   useEffect(() => { setOrigin(window.location.origin); }, []);
   let curl = "Enter a valid backend URL to generate the command.";
-  try { curl = curlExample(settings, org.id); } catch { /* Invalid URL is reported by the health check. */ }
+  try { curl = curlExample(settings, org?.id ?? ""); } catch { /* Invalid URL is reported by the health check. */ }
   const spec = fastApiExample(origin);
   const copy = async (text: string, name: string) => {
     try { await navigator.clipboard.writeText(text); setCopied(name); toast.success(`${name} copied`); }
@@ -62,7 +62,7 @@ function Settings() {
           </select>
         </div>
         <div className="flex items-center justify-between gap-4 border-y border-border py-4">
-          <div><label htmlFor="org-header" className="text-sm font-medium">Organization Header</label><p className="mt-1 break-all font-mono text-xs text-muted-foreground">X-Organization-Id: {org.id}</p></div>
+          <div><label htmlFor="org-header" className="text-sm font-medium">Organization Header</label><p className="mt-1 break-all font-mono text-xs text-muted-foreground">X-Organization-Id: {org?.id}</p></div>
           <Switch id="org-header" disabled={!ready} checked={settings.organizationHeader} onCheckedChange={(organizationHeader) => setSettings({ ...settings, organizationHeader })} />
         </div>
         {storageError && <p role="alert" className="text-xs text-warning">Browser storage is unavailable. These settings will not survive a reload.</p>}
