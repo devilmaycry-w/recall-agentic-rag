@@ -19,8 +19,8 @@ export const askAssistant = createServerFn({ method: "POST" })
     const { runRag } = await import("./rag.server");
     const answer = await runRag(supabase, data.orgId, data.query);
 
-    const ROUTE_ENUM: Record<string, string> = { "Document Retrieval": "doc_retrieval", "Read-Only SQL": "sql_query", Clarification: "clarify" };
-    const verification = answer.verification.kind.toLowerCase();
+    const ROUTE_ENUM = { "Document Retrieval": "doc_retrieval", "Read-Only SQL": "sql_query", Clarification: "clarify" } as const;
+    const verification = answer.verification.kind.toLowerCase() as "grounded" | "corrected" | "abstained";
     const retries = answer.verification.kind === "Corrected" ? answer.verification.retry : answer.verification.kind === "Abstained" ? 2 : 0;
     await supabase.from("queries").insert({
       org_id: data.orgId,
@@ -38,5 +38,13 @@ export const askAssistant = createServerFn({ method: "POST" })
       target: `${answer.route} · ${verification}`,
     });
 
-    return answer;
+    // Plain serializable DTO (AgentAnswer's optional sql field is not RPC-safe).
+    return {
+      route: answer.route,
+      content: answer.content,
+      citations: answer.citations,
+      verification: answer.verification,
+      trace: answer.trace,
+      latencyMs: answer.latencyMs,
+    };
   });
