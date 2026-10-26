@@ -175,9 +175,9 @@ export async function runRag(
       t = performance.now();
       const rewrite = await chatJson<{ query: string }>(FAST_MODEL, [
         { role: "system", content: 'Rewrite the question as a better semantic search query: expand acronyms, add likely synonyms, keep it one sentence. Reply JSON: {"query":"..."}' },
-        { role: "user", content: query },
+        { role: "user", content: `${conversationBlock}Question: ${searchQuery}` },
       ]);
-      currentQuery = rewrite.query || query;
+      currentQuery = rewrite.query || searchQuery;
       trace.push({ name: "Query Rewrite", detail: currentQuery, ms: elapsed(t), status: "ok" });
     }
     attempts++;
@@ -209,10 +209,11 @@ export async function runRag(
       role: "system",
       content:
         "You are a knowledge assistant. Answer ONLY from the numbered excerpts below. Cite every claim with [n] markers matching the excerpt numbers. " +
-        "If the excerpts don't fully answer the question, say exactly what is missing. Be concise." +
+        "If the excerpts don't fully answer the question, say exactly what is missing. Be concise. " +
+        "Use the recent conversation only to understand what the user is referring to — never as a source of facts." +
         (extra ? ` ${extra}` : ""),
     },
-    { role: "user", content: `Question: ${query}\n\nExcerpts:\n${context}` },
+    { role: "user", content: `${conversationBlock}Question: ${query}\n\nExcerpts:\n${context}` },
   ];
 
   // ── Step 4: Answer generation ──────────────────────────────────────────
