@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, BookOpen, ChevronDown, ChevronRight, CircleCheck, CircleSlash, Database, FileText, HelpCircle, Loader2, RotateCcw, ThumbsDown, ThumbsUp, TriangleAlert, Workflow } from "lucide-react";
+import { ArrowUp, BookOpen, ChevronDown, ChevronRight, CircleCheck, CircleSlash, Database, FileText, HelpCircle, History, Loader2, RotateCcw, ThumbsDown, ThumbsUp, Trash2, TriangleAlert, Workflow, X } from "lucide-react";
 import { toast } from "sonner";
 import { type AgentAnswer, type Citation, type RouteKind } from "@/lib/agent";
 import { useStore } from "@/lib/store";
@@ -134,6 +134,57 @@ function Chat() {
         </form>
         <p className="mx-auto mt-1.5 max-w-3xl break-words font-mono text-[10px] text-muted-foreground">{backend.settings.mode === "custom" ? `Live Local Backend · ${backend.settings.url} · ${org?.id}` : `Cloud RAG · semantic search over ${docs.filter((d) => d.status === "Indexed").length} indexed documents · self-verified answers`}</p>
       </div>
+    </div>
+  );
+}
+
+/** Turns that will be sent as follow-up context with the next message. */
+function contextTurns(msgs: Msg[]): Msg[] {
+  return msgs.filter((m) => !m.pending && !m.error && m.text.trim()).slice(-6);
+}
+
+function ContextBar({ msgs, busy, onClear }: { msgs: Msg[]; busy: boolean; onClear: () => void }) {
+  const [open, setOpen] = useState(false);
+  const turns = contextTurns(msgs);
+  if (turns.length === 0) return null;
+  return (
+    <div className="mx-auto mb-2 max-w-3xl">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          className="inline-flex items-center gap-1.5 rounded border border-border bg-card px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+        >
+          <History className="h-3 w-3 text-primary" />
+          Context · {turns.length} turn{turns.length === 1 ? "" : "s"}
+          {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+        </button>
+        <button
+          onClick={onClear}
+          disabled={busy}
+          className="inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-muted-foreground transition-colors hover:border-destructive/50 hover:text-destructive disabled:opacity-40"
+        >
+          <Trash2 className="h-3 w-3" /> Clear
+        </button>
+        <span className="hidden font-mono text-[10px] text-muted-foreground sm:inline">follow-ups are interpreted against these turns</span>
+      </div>
+      {open && (
+        <div className="mt-1.5 rounded border border-border bg-card">
+          <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
+            <span className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">Conversation context sent with your next message</span>
+            <button onClick={() => setOpen(false)} aria-label="Close context panel" className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
+          </div>
+          <ol className="max-h-48 space-y-1.5 overflow-y-auto px-3 py-2">
+            {turns.map((m) => (
+              <li key={m.id} className="flex gap-2 text-xs">
+                <span className={cn("shrink-0 font-mono text-[10px] uppercase", m.role === "user" ? "text-primary" : "text-muted-foreground")}>{m.role === "user" ? "You" : "AI"}</span>
+                <span className="line-clamp-2 break-words text-muted-foreground">{m.text}</span>
+              </li>
+            ))}
+          </ol>
+          <div className="border-t border-border px-3 py-1.5 font-mono text-[10px] text-muted-foreground">Clearing starts a fresh session — follow-ups will no longer reference these turns.</div>
+        </div>
+      )}
     </div>
   );
 }
