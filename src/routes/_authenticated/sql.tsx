@@ -6,7 +6,7 @@ import { SCHEMA } from "@/lib/mock-data";
 import { MAX_ROWS, runSql, type SqlResult } from "@/lib/sql";
 import { useStore } from "@/lib/store";
 
-export const Route = createFileRoute("/sql")({
+export const Route = createFileRoute("/_authenticated/sql")({
   head: () => ({
     meta: [
       { title: "SQL Tool · Recall Agentic RAG" },

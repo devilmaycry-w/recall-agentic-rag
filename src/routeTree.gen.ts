@@ -10,90 +10,118 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AnalyticsRouteImport } from './routes/analytics'
-import { Route as AuditRouteImport } from './routes/audit'
-import { Route as DocumentsRouteImport } from './routes/documents'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as SqlRouteImport } from './routes/sql'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
+import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authenticated/documents'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedSqlRouteImport } from './routes/_authenticated/sql'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AnalyticsRoute = AnalyticsRouteImport.update({
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuditRoute = AuditRouteImport.update({
+const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const DocumentsRoute = DocumentsRouteImport.update({
+const AuthenticatedDocumentsRoute = AuthenticatedDocumentsRouteImport.update({
   id: '/documents',
   path: '/documents',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const SettingsRoute = SettingsRouteImport.update({
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const SqlRoute = SqlRouteImport.update({
+const AuthenticatedSqlRoute = AuthenticatedSqlRouteImport.update({
   id: '/sql',
   path: '/sql',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
-  '/audit': typeof AuditRoute
-  '/documents': typeof DocumentsRoute
-  '/settings': typeof SettingsRoute
-  '/sql': typeof SqlRoute
+  '/auth': typeof AuthRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/audit': typeof AuthenticatedAuditRoute
+  '/documents': typeof AuthenticatedDocumentsRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/sql': typeof AuthenticatedSqlRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
-  '/audit': typeof AuditRoute
-  '/documents': typeof DocumentsRoute
-  '/settings': typeof SettingsRoute
-  '/sql': typeof SqlRoute
+  '/auth': typeof AuthRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/audit': typeof AuthenticatedAuditRoute
+  '/documents': typeof AuthenticatedDocumentsRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/sql': typeof AuthenticatedSqlRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
-  '/audit': typeof AuditRoute
-  '/documents': typeof DocumentsRoute
-  '/settings': typeof SettingsRoute
-  '/sql': typeof SqlRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
+  '/_authenticated/audit': typeof AuthenticatedAuditRoute
+  '/_authenticated/documents': typeof AuthenticatedDocumentsRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/sql': typeof AuthenticatedSqlRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/analytics' | '/audit' | '/documents' | '/settings' | '/sql'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analytics' | '/audit' | '/documents' | '/settings' | '/sql'
-  id:
-    | '__root__'
+  fullPaths:
     | '/'
+    | '/auth'
     | '/analytics'
     | '/audit'
     | '/documents'
     | '/settings'
     | '/sql'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/auth'
+    | '/analytics'
+    | '/audit'
+    | '/documents'
+    | '/settings'
+    | '/sql'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/analytics'
+    | '/_authenticated/audit'
+    | '/_authenticated/documents'
+    | '/_authenticated/settings'
+    | '/_authenticated/sql'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AnalyticsRoute: typeof AnalyticsRoute
-  AuditRoute: typeof AuditRoute
-  DocumentsRoute: typeof DocumentsRoute
-  SettingsRoute: typeof SettingsRoute
-  SqlRoute: typeof SqlRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -105,51 +133,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/analytics': {
-      id: '/analytics'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/analytics': {
+      id: '/_authenticated/analytics'
       path: '/analytics'
       fullPath: '/analytics'
-      preLoaderRoute: typeof AnalyticsRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/audit': {
-      id: '/audit'
+    '/_authenticated/audit': {
+      id: '/_authenticated/audit'
       path: '/audit'
       fullPath: '/audit'
-      preLoaderRoute: typeof AuditRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedAuditRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/documents': {
-      id: '/documents'
+    '/_authenticated/documents': {
+      id: '/_authenticated/documents'
       path: '/documents'
       fullPath: '/documents'
-      preLoaderRoute: typeof DocumentsRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedDocumentsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/settings': {
-      id: '/settings'
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
       path: '/settings'
       fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/sql': {
-      id: '/sql'
+    '/_authenticated/sql': {
+      id: '/_authenticated/sql'
       path: '/sql'
       fullPath: '/sql'
-      preLoaderRoute: typeof SqlRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedSqlRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
+  AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
+  AuthenticatedDocumentsRoute: typeof AuthenticatedDocumentsRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSqlRoute: typeof AuthenticatedSqlRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
+  AuthenticatedAuditRoute: AuthenticatedAuditRoute,
+  AuthenticatedDocumentsRoute: AuthenticatedDocumentsRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSqlRoute: AuthenticatedSqlRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AnalyticsRoute: AnalyticsRoute,
-  AuditRoute: AuditRoute,
-  DocumentsRoute: DocumentsRoute,
-  SettingsRoute: SettingsRoute,
-  SqlRoute: SqlRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

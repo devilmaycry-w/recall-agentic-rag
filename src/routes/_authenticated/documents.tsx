@@ -6,7 +6,7 @@ import { can, useStore } from "@/lib/store";
 import { CHUNKS, type Doc, type DocStatus } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/documents")({
+export const Route = createFileRoute("/_authenticated/documents")({
   head: () => ({
     meta: [
       { title: "Documents · Recall Agentic RAG" },

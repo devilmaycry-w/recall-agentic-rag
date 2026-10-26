@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useStore } from "@/lib/store";
 import { curlExample, fastApiExample } from "@/lib/backend";
 
-export const Route = createFileRoute("/settings")({
+export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [
     { title: "Backend Settings · Recall" },
     { name: "description", content: "Configure a local FastAPI or Ollama RAG backend for the Recall assistant." },
