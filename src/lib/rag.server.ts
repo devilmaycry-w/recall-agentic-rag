@@ -19,7 +19,7 @@ interface MatchedChunk {
   similarity: number;
 }
 
-async function chat(model: string, messages: { role: string; content: string }[], json = false): Promise<string> {
+async function chat(model: string, messages: { role: string; content: string }[], json = false, maxTokens = 512): Promise<string> {
   const key = process.env["OPENROUTER_API_KEY"];
   if (!key) throw new Error("OpenRouter API key is not configured. Add OPENROUTER_API_KEY in project secrets.");
   const res = await fetch(OR_URL, {
@@ -29,6 +29,7 @@ async function chat(model: string, messages: { role: string; content: string }[]
       model,
       messages,
       temperature: 0,
+      max_tokens: maxTokens,
       ...(json ? { response_format: { type: "json_object" } } : {}),
     }),
   });
