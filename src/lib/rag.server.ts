@@ -175,7 +175,7 @@ export async function runRag(supabase: SupabaseClient, orgId: string, query: str
 
   // ── Step 4: Answer generation ──────────────────────────────────────────
   t = performance.now();
-  let content = await chat(ANSWER_MODEL, genMessages());
+  let content = await chat(ANSWER_MODEL, genMessages(), false, 1024);
   trace.push({ name: "Answer Generation", detail: `${kept.length} cited sources · ${ANSWER_MODEL}`, ms: elapsed(t), status: "ok" });
 
   // ── Step 5: Groundedness check, one bounded regeneration ──────────────
