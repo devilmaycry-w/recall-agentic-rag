@@ -2,10 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, BookOpen, ChevronDown, ChevronRight, CircleCheck, CircleSlash, Database, FileText, HelpCircle, Loader2, RotateCcw, ThumbsDown, ThumbsUp, TriangleAlert, Workflow } from "lucide-react";
 import { toast } from "sonner";
-import { runAgent, type AgentAnswer, type Citation, type RouteKind } from "@/lib/agent";
+import { type AgentAnswer, type Citation, type RouteKind } from "@/lib/agent";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { queryBackend } from "@/lib/backend";
+import { askAssistant } from "@/lib/chat.functions";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/assistant")({
@@ -63,8 +64,9 @@ function Chat() {
     setInput("");
     const timeout = setTimeout(() => controller.abort(), 60000);
     try {
-      const answer = live ? await queryBackend(backend.settings, org.id, q, sessionRef.current, controller.signal) : runAgent(q, docs);
-      if (!live) await new Promise((resolve) => setTimeout(resolve, Math.min(2200, 600 + answer.latencyMs / 2)));
+      const answer = live
+        ? await queryBackend(backend.settings, org.id, q, sessionRef.current, controller.signal)
+        : await askAssistant({ data: { orgId: org.id, query: q, sessionId: sessionRef.current } });
       if (requestRef.current !== controller) return;
       setMsgs((m) => m.map((x) => (x.id === id ? { ...x, pending: false, text: answer.content, answer } : x)));
       const v = answer.verification;
@@ -123,7 +125,7 @@ function Chat() {
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
           </Button>
         </form>
-        <p className="mx-auto mt-1.5 max-w-3xl break-words font-mono text-[10px] text-muted-foreground">{backend.settings.mode === "custom" ? `Live Local Backend · ${backend.settings.url} · ${org?.id}` : `Prototype · simulated agent · ${docs.filter((d) => d.status === "Indexed").length} indexed documents in this workspace`}</p>
+        <p className="mx-auto mt-1.5 max-w-3xl break-words font-mono text-[10px] text-muted-foreground">{backend.settings.mode === "custom" ? `Live Local Backend · ${backend.settings.url} · ${org?.id}` : `Cloud RAG · semantic search over ${docs.filter((d) => d.status === "Indexed").length} indexed documents · self-verified answers`}</p>
       </div>
     </div>
   );
@@ -169,11 +171,13 @@ function AssistantMessage({ msg }: { msg: Msg }) {
     );
   }
   if (msg.error) return <div role="alert" className="rounded border border-warning/40 bg-warning/5 p-4">
-    <h2 className="flex items-center gap-2 text-sm font-semibold"><TriangleAlert className="h-4 w-4 text-warning" />Local backend unavailable</h2>
-    <p className="mt-2 break-words text-xs text-muted-foreground">{msg.error} No backend answer was returned.</p>
-    <p className="mt-2 text-xs leading-relaxed">Start your FastAPI adapter, then check /health in Backend Settings. Allow this app’s origin in CORS and browser local-network access. Ollama needs an adapter exposing the query contract.</p>
-    <code className="mt-3 block overflow-x-auto font-mono text-xs">uvicorn main:app --host 127.0.0.1 --port 8000</code>
-    <div className="mt-3 flex flex-wrap gap-2"><Button asChild variant="outline" size="sm"><Link to="/settings">Backend Settings</Link></Button><Button size="sm" onClick={() => backend.setSettings({ ...backend.settings, mode: "simulated" })}><RotateCcw /> Switch to Simulated</Button></div>
+    <h2 className="flex items-center gap-2 text-sm font-semibold"><TriangleAlert className="h-4 w-4 text-warning" />{msg.live ? "Local backend unavailable" : "Assistant request failed"}</h2>
+    <p className="mt-2 break-words text-xs text-muted-foreground">{msg.error} No answer was returned.</p>
+    {msg.live && <>
+      <p className="mt-2 text-xs leading-relaxed">Start your FastAPI adapter, then check /health in Backend Settings. Allow this app’s origin in CORS and browser local-network access. Ollama needs an adapter exposing the query contract.</p>
+      <code className="mt-3 block overflow-x-auto font-mono text-xs">uvicorn main:app --host 127.0.0.1 --port 8000</code>
+    </>}
+    <div className="mt-3 flex flex-wrap gap-2"><Button asChild variant="outline" size="sm"><Link to="/settings">Backend Settings</Link></Button>{msg.live && <Button size="sm" onClick={() => backend.setSettings({ ...backend.settings, mode: "simulated" })}><RotateCcw /> Switch to Cloud RAG</Button>}</div>
   </div>;
   const a = msg.answer;
   if (!a) return null;
