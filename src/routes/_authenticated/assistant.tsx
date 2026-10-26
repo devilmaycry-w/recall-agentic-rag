@@ -118,6 +118,7 @@ function Chat() {
         </div>
       </div>
       <div className="border-t border-border bg-background px-4 py-3">
+        <ContextBar msgs={msgs} busy={busy} onClear={() => { requestRef.current?.abort(); requestRef.current = null; sendingRef.current = false; sessionRef.current = crypto.randomUUID(); setMsgs([]); }} />
         <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="mx-auto flex max-w-3xl items-end gap-2 rounded-lg border border-input bg-card p-2 focus-within:border-primary/60">
           <textarea
             value={input}
