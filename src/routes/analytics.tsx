@@ -100,10 +100,10 @@ function Analytics() {
                   const good = b.better === "higher" ? d > 0 : d < 0;
                   return <tr key={b.metric} className="border-t border-border"><td className="py-1.5 font-sans">{b.metric}</td><td className="text-right">{b.naive.toFixed(2)}</td><td className="text-right">{b.agentic.toFixed(2)}</td><td className={`text-right ${good ? "text-success" : "text-destructive"}`}>{d > 0 ? "+" : ""}{d.toFixed(2)}</td></tr>;
                 })}
-                {COST_LATENCY.length === 2 && <>
-                  <tr className="border-t border-border"><td className="py-1.5 font-sans">Latency (ms)</td><td className="text-right">{COST_LATENCY[0].latency}</td><td className="text-right">{COST_LATENCY[1].latency}</td><td className="text-right text-warning">+{COST_LATENCY[1].latency - COST_LATENCY[0].latency}</td></tr>
-                  <tr className="border-t border-border"><td className="py-1.5 font-sans">Cost / query ($)</td><td className="text-right">{COST_LATENCY[0].cost.toFixed(4)}</td><td className="text-right">{COST_LATENCY[1].cost.toFixed(4)}</td><td className="text-right text-warning">+{(COST_LATENCY[1].cost - COST_LATENCY[0].cost).toFixed(4)}</td></tr>
-                </>}
+                {(() => { const [n, g] = [COST_LATENCY[0]!, COST_LATENCY[1]!]; return <>
+                  <tr className="border-t border-border"><td className="py-1.5 font-sans">Latency (ms)</td><td className="text-right">{n.latency}</td><td className="text-right">{g.latency}</td><td className="text-right text-warning">+{g.latency - n.latency}</td></tr>
+                  <tr className="border-t border-border"><td className="py-1.5 font-sans">Cost / query ($)</td><td className="text-right">{n.cost.toFixed(4)}</td><td className="text-right">{g.cost.toFixed(4)}</td><td className="text-right text-warning">+{(g.cost - n.cost).toFixed(4)}</td></tr>
+                </>; })()}
               </tbody>
             </table>
           </div>

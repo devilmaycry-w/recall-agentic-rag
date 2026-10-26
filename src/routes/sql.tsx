@@ -32,9 +32,9 @@ const RULES = ["SELECT statements only", "Single statement, no comments", "Table
 
 function SqlPage() {
   const { log } = useStore();
-  const [q, setQ] = useState(EXAMPLES[0]);
+  const [q, setQ] = useState(EXAMPLES[0]!);
   const [res, setRes] = useState<SqlResult | null>(null);
-  const run = (sql = q) => {
+  const run = (sql: string = q) => {
     setQ(sql);
     const r = runSql(sql);
     setRes(r);

@@ -41,7 +41,7 @@ export function runSql(sql: string): SqlResult {
   const q = sql.trim().replace(/;+\s*$/, "");
   const m = q.match(/^select\s+(.+?)\s+from\s+(\w+)(?:\s+where\s+(.+?))?(?:\s+group\s+by\s+(\w+))?(?:\s+order\s+by\s+(\w+)(?:\s+(asc|desc))?)?(?:\s+limit\s+(\d+))?$/i);
   if (!m) return { ok: false, error: "Unsupported query shape", guardrail: "syntax" };
-  const [, colsRaw, table, where, groupBy, orderBy, dir, limit] = m;
+  const [, colsRaw = "", table = "", where, groupBy, orderBy, dir, limit] = m;
   const data = TABLES[table.toLowerCase()];
   if (!data) return { ok: false, error: `Unknown table '${table}' (allowed: ${Object.keys(TABLES).join(", ")})`, guardrail: "table-allowlist" };
 
@@ -51,7 +51,7 @@ export function runSql(sql: string): SqlResult {
     for (const c of conds) {
       const cm = c.trim().match(/^(\w+)\s*(=|!=|<>|>=|<=|>|<)\s*('?)([^']*)\3$/);
       if (!cm) return { ok: false, error: `Unsupported WHERE clause: ${c}`, guardrail: "syntax" };
-      const [, col, op, , val] = cm;
+      const col = cm[1]!, op = cm[2]!, val = cm[4] ?? "";
       rows = rows.filter((r) => cmp(r[col], op, val));
     }
   }
@@ -70,7 +70,7 @@ export function runSql(sql: string): SqlResult {
       for (const c of cols) {
         const am = c.match(aggRe);
         if (!am) { out[c] = grp[0]?.[c]; continue; }
-        const [, fn, field, alias] = am;
+        const fn = am[1]!, field = am[2]!, alias = am[3];
         const vals = grp.map((r) => Number(r[field] ?? 1));
         const name = alias ?? `${fn.toLowerCase()}_${field === "*" ? "all" : field}`;
         const f = fn.toLowerCase();

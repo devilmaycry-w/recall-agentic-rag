@@ -72,7 +72,7 @@ export function runAgent(query: string, docs: Doc[]): AgentAnswer {
     }
     trace.push({ name: "Query Execution", detail: `${res.rows.length} rows in ${res.ms}ms (read replica)`, ms: res.ms + r(20, 60), status: "ok" });
     const top = res.rows[0];
-    const [k1, k2] = res.columns;
+    const k1 = res.columns[0] ?? "", k2 = res.columns[1] ?? k1;
     trace.push({ name: "Answer Generation", detail: "Summarized result set", ms: r(300, 600), status: "ok" });
     trace.push({ name: "Groundedness Check", detail: "All figures match result rows", ms: r(100, 200), status: "ok" });
     const fmt = (v: unknown) => (typeof v === "number" ? v.toLocaleString() : String(v));
@@ -122,7 +122,7 @@ export function runAgent(query: string, docs: Doc[]): AgentAnswer {
     confidence: Math.min(0.99, 0.55 + score * 0.45), snippet: c.text,
   }));
   // Deterministic "self-correction": answers built from a single weak chunk need a retry
-  const needsRetry = best[0].score < 0.6;
+  const needsRetry = best[0]!.score < 0.6;
   trace.push({ name: "Answer Generation", detail: `Drafted answer from ${best.length} chunk(s)`, ms: r(500, 900), status: "ok" });
   if (needsRetry) {
     trace.push({ name: "Groundedness Check", detail: "1 unsupported claim detected → regenerate", ms: r(200, 300), status: "warn" });

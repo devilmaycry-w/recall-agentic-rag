@@ -79,7 +79,7 @@ export interface SalesRow { id: number; region: string; product: string; quarter
 export const SALES: SalesRow[] = (() => {
   const regions = ["EMEA", "NA", "APAC", "LATAM"];
   const products = ["R-200", "R-350", "Vision Kit", "Gripper Pro"];
-  const quarters = ["2026-Q1", "2026-Q2", "2026-Q3"];
+  const quarters = ["2026-Q1", "2026-Q2", "2026-Q3", "2026-Q4"];
   const rows: SalesRow[] = [];
   let id = 1;
   for (const q of quarters) for (const r of regions) for (const p of products) {
