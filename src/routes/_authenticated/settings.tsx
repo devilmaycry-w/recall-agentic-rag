@@ -27,7 +27,7 @@ function Settings() {
   const [copied, setCopied] = useState<string | null>(null);
   useEffect(() => { setOrigin(window.location.origin); }, []);
   let curl = "Enter a valid backend URL to generate the command.";
-  try { curl = curlExample(settings, org.id); } catch { /* Invalid URL is reported by the health check. */ }
+  try { curl = curlExample(settings, org?.id ?? ""); } catch { /* Invalid URL is reported by the health check. */ }
   const spec = fastApiExample(origin);
   const copy = async (text: string, name: string) => {
     try { await navigator.clipboard.writeText(text); setCopied(name); toast.success(`${name} copied`); }

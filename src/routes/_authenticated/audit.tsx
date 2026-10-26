@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/audit")({
 
 function Audit() {
   const { audit, role, org } = useStore();
+  if (!org) return null;
   if (!can.viewAudit(role)) return <Locked need="Admin" />;
   return (
     <div>
