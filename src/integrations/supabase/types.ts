@@ -144,6 +144,44 @@ export type Database = {
           },
         ]
       }
+      org_ai_settings: {
+        Row: {
+          answer_model: string | null
+          api_key: string
+          fast_model: string | null
+          org_id: string
+          provider: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          answer_model?: string | null
+          api_key: string
+          fast_model?: string | null
+          org_id: string
+          provider: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          answer_model?: string | null
+          api_key?: string
+          fast_model?: string | null
+          org_id?: string
+          provider?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_ai_settings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
