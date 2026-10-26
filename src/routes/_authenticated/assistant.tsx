@@ -4,7 +4,7 @@ import { ArrowRight, FileText, ShieldCheck, Workflow } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
-export const Route = createFileRoute("/_authenticated/")({
+export const Route = createFileRoute("/_authenticated/assistant")({
   head: () => ({
     meta: [
       { title: "Recall — Agentic RAG Knowledge Assistant" },

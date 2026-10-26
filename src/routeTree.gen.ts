@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as AuthenticatedAssistantRouteImport } from './routes/_authenticated/assistant'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authenticated/documents'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -35,6 +36,11 @@ const AuthRoute = AuthRouteImport.update({
 const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAssistantRoute = AuthenticatedAssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
@@ -62,6 +68,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/assistant': typeof AuthenticatedAssistantRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/documents': typeof AuthenticatedDocumentsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -71,6 +78,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/assistant': typeof AuthenticatedAssistantRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/documents': typeof AuthenticatedDocumentsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -82,6 +90,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
+  '/_authenticated/assistant': typeof AuthenticatedAssistantRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/documents': typeof AuthenticatedDocumentsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -93,6 +102,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/analytics'
+    | '/assistant'
     | '/audit'
     | '/documents'
     | '/settings'
@@ -102,6 +112,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/analytics'
+    | '/assistant'
     | '/audit'
     | '/documents'
     | '/settings'
@@ -112,6 +123,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/analytics'
+    | '/_authenticated/assistant'
     | '/_authenticated/audit'
     | '/_authenticated/documents'
     | '/_authenticated/settings'
@@ -154,6 +166,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/assistant': {
+      id: '/_authenticated/assistant'
+      path: '/assistant'
+      fullPath: '/assistant'
+      preLoaderRoute: typeof AuthenticatedAssistantRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/audit': {
       id: '/_authenticated/audit'
       path: '/audit'
@@ -187,6 +206,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
+  AuthenticatedAssistantRoute: typeof AuthenticatedAssistantRoute
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedDocumentsRoute: typeof AuthenticatedDocumentsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -195,6 +215,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
+  AuthenticatedAssistantRoute: AuthenticatedAssistantRoute,
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedDocumentsRoute: AuthenticatedDocumentsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
