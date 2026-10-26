@@ -125,7 +125,7 @@ export async function runRag(
   // ── Steps 2-3: Retrieval + relevance grading, with bounded rewrite retries ──
   let kept: (MatchedChunk & { score: number })[] = [];
   let attempts = 0;
-  let currentQuery = query;
+  let currentQuery = searchQuery;
   while (attempts <= MAX_RETRIES && kept.length === 0) {
     t = performance.now();
     const [embedding] = await embedChunks([currentQuery]);
