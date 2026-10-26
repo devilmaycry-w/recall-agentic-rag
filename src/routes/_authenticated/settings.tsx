@@ -83,3 +83,113 @@ function Settings() {
     </div>
   </div>;
 }
+
+/** Bring-your-own-key AI provider for this workspace's Assistant. Admin-managed. */
+function AiProviderSection() {
+  const { org, role } = useStore();
+  const isAdmin = role === "Admin";
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [current, setCurrent] = useState<{ provider: AiProviderId; fastModel: string | null; answerModel: string | null; updatedAt: string } | null>(null);
+  const [provider, setProvider] = useState<AiProviderId>("openrouter");
+  const [apiKey, setApiKey] = useState("");
+  const [fastModel, setFastModel] = useState("");
+  const [answerModel, setAnswerModel] = useState("");
+
+  useEffect(() => {
+    if (!org || !isAdmin) { setLoading(false); return; }
+    let cancelled = false;
+    getOrgAiSettings({ data: { orgId: org.id } })
+      .then((row) => {
+        if (cancelled || !row) return;
+        setCurrent(row);
+        setProvider(row.provider);
+        setFastModel(row.fastModel ?? "");
+        setAnswerModel(row.answerModel ?? "");
+      })
+      .catch(() => toast.error("Could not load AI provider settings."))
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [org, isAdmin]);
+
+  if (!org) return null;
+  const def = AI_PROVIDERS[provider];
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await saveOrgAiSettings({ data: { orgId: org.id, provider, apiKey: apiKey.trim(), fastModel: fastModel.trim() || undefined, answerModel: answerModel.trim() || undefined } });
+      setCurrent({ provider, fastModel: fastModel.trim() || null, answerModel: answerModel.trim() || null, updatedAt: new Date().toISOString() });
+      setApiKey("");
+      toast.success(`${def.label} key saved — the Assistant now uses it for this workspace.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save the key.");
+    } finally { setSaving(false); }
+  };
+
+  const remove = async () => {
+    setSaving(true);
+    try {
+      await clearOrgAiSettings({ data: { orgId: org.id } });
+      setCurrent(null);
+      setApiKey("");
+      toast.success("Workspace key removed — the Assistant uses the project default again.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not remove the key.");
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <section className="space-y-5">
+      <div>
+        <h2 className="flex items-center gap-2 text-base font-semibold"><KeyRound className="h-4 w-4 text-primary" /> AI Provider (your own key)</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Answer questions with your own provider account instead of the project default. The key is stored encrypted in the backend, never shown again, and only this workspace's Assistant uses it.
+        </p>
+      </div>
+      {!isAdmin ? (
+        <p className="rounded border border-border bg-card px-3 py-2 text-xs text-muted-foreground">Only workspace admins can manage the AI provider key.</p>
+      ) : loading ? (
+        <p className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…</p>
+      ) : (
+        <>
+          <div role="status" className="rounded border border-border bg-card px-3 py-2 text-xs">
+            {current ? (
+              <span className="text-success">Active: {AI_PROVIDERS[current.provider].label}{current.answerModel ? ` · ${current.answerModel}` : ""} · key saved {new Date(current.updatedAt).toLocaleDateString()}</span>
+            ) : (
+              <span className="text-muted-foreground">No workspace key — using the project default (OpenRouter).</span>
+            )}
+          </div>
+          <div>
+            <label htmlFor="ai-provider" className="mb-2 block text-sm font-medium">Provider</label>
+            <select id="ai-provider" value={provider} onChange={(e) => setProvider(e.target.value as AiProviderId)} className="w-full rounded border border-input bg-card px-3 py-2 text-sm">
+              {AI_PROVIDER_IDS.map((id) => <option key={id} value={id}>{AI_PROVIDERS[id].label}</option>)}
+            </select>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Get a key at <a href={def.docsUrl} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-2">{def.docsUrl.replace(/^https:\/\//, "")}</a>.
+              {!def.embeddings && " This provider has no embeddings API, so document indexing and search keep using the built-in embeddings — only answer generation uses your key."}
+            </p>
+          </div>
+          <div>
+            <label htmlFor="ai-key" className="mb-2 block text-sm font-medium">API key</label>
+            <input id="ai-key" type="password" autoComplete="off" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={current ? "Saved — enter a new key to replace it" : def.keyPlaceholder} className="w-full rounded border border-input bg-card px-3 py-2 font-mono text-sm" />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="ai-fast-model" className="mb-2 block text-sm font-medium">Fast model <span className="font-normal text-muted-foreground">(routing, grading)</span></label>
+              <input id="ai-fast-model" value={fastModel} onChange={(e) => setFastModel(e.target.value)} placeholder={def.fastModel} className="w-full rounded border border-input bg-card px-3 py-2 font-mono text-sm" />
+            </div>
+            <div>
+              <label htmlFor="ai-answer-model" className="mb-2 block text-sm font-medium">Answer model</label>
+              <input id="ai-answer-model" value={answerModel} onChange={(e) => setAnswerModel(e.target.value)} placeholder={def.answerModel} className="w-full rounded border border-input bg-card px-3 py-2 font-mono text-sm" />
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={saving || apiKey.trim().length < 8} onClick={save}>{saving ? <Loader2 className="animate-spin" /> : <KeyRound />} {current ? "Replace key" : "Save key"}</Button>
+            {current && <Button variant="outline" disabled={saving} onClick={remove}><Trash2 /> Remove key</Button>}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
