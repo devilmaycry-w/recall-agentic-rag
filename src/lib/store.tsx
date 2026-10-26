@@ -97,8 +97,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const loadOrgs = useCallback(async () => {
     const { data } = await supabase
       .from("user_roles")
-      .select("org_id, role, organizations(id, name, slug)")
-      .order("created_at", { ascending: true });
+      .select("org_id, role, organizations(id, name, slug)");
     const list: Org[] = (data ?? [])
       .map((r: any) => ({ id: r.organizations?.id, name: r.organizations?.name, slug: r.organizations?.slug, role: ROLE_LABEL[r.role] ?? "Member" }))
       .filter((o: Org) => o.id);
