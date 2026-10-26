@@ -20,6 +20,7 @@ export function useBackendSettings(orgId: string) {
   }, [settings, ready]);
   useEffect(() => {
     requestRef.current?.abort();
+    requestRef.current = null;
     setConnection({ kind: "unchecked" });
   }, [settings, orgId]);
   const healthCheck = async () => {
