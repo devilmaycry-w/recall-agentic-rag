@@ -194,7 +194,7 @@ export async function runRag(supabase: SupabaseClient, orgId: string, query: str
   } else {
     trace.push({ name: "Groundedness Check", detail: `Failed — ${check.issue}. Regenerating (1/1)`, ms: elapsed(t), status: "warn" });
     t = performance.now();
-    content = await chat(ANSWER_MODEL, genMessages(`Previous attempt was ungrounded: ${check.issue}. Stick strictly to the excerpts.`));
+    content = await chat(ANSWER_MODEL, genMessages(`Previous attempt was ungrounded: ${check.issue}. Stick strictly to the excerpts.`), false, 1024);
     trace.push({ name: "Answer Regeneration", detail: "Corrected answer generated", ms: elapsed(t), status: "ok" });
     t = performance.now();
     const recheck = await chatJson<{ grounded: boolean; issue: string }>(FAST_MODEL, [
