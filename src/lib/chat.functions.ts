@@ -19,13 +19,14 @@ export const askAssistant = createServerFn({ method: "POST" })
     const { runRag } = await import("./rag.server");
     const answer = await runRag(supabase, data.orgId, data.query);
 
-    const verification = answer.verification.kind;
+    const ROUTE_ENUM: Record<string, string> = { "Document Retrieval": "doc_retrieval", "Read-Only SQL": "sql_query", Clarification: "clarify" };
+    const verification = answer.verification.kind.toLowerCase();
     const retries = answer.verification.kind === "Corrected" ? answer.verification.retry : answer.verification.kind === "Abstained" ? 2 : 0;
     await supabase.from("queries").insert({
       org_id: data.orgId,
       user_id: userId,
       question: data.query,
-      route: answer.route,
+      route: ROUTE_ENUM[answer.route] ?? "doc_retrieval",
       latency_ms: answer.latencyMs,
       verification,
       retries,
