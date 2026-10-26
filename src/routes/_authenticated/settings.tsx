@@ -62,7 +62,7 @@ function Settings() {
           </select>
         </div>
         <div className="flex items-center justify-between gap-4 border-y border-border py-4">
-          <div><label htmlFor="org-header" className="text-sm font-medium">Organization Header</label><p className="mt-1 break-all font-mono text-xs text-muted-foreground">X-Organization-Id: {org.id}</p></div>
+          <div><label htmlFor="org-header" className="text-sm font-medium">Organization Header</label><p className="mt-1 break-all font-mono text-xs text-muted-foreground">X-Organization-Id: {org?.id}</p></div>
           <Switch id="org-header" disabled={!ready} checked={settings.organizationHeader} onCheckedChange={(organizationHeader) => setSettings({ ...settings, organizationHeader })} />
         </div>
         {storageError && <p role="alert" className="text-xs text-warning">Browser storage is unavailable. These settings will not survive a reload.</p>}
