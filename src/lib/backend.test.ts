@@ -20,16 +20,16 @@ describe("Backend configuration and contract", () => {
     const fetcher = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetcher);
     const latency = await checkBackend(DEFAULT_SETTINGS, "org_alpha");
-    expect(fetcher.mock.calls[0][0]).toBe("http://localhost:8000/health");
-    expect(fetcher.mock.calls[0][1].method).toBeUndefined();
+    expect(fetcher.mock.calls[0]?.[0]).toBe("http://localhost:8000/health");
+    expect(fetcher.mock.calls[0]?.[1]?.method).toBeUndefined();
     expect(latency).toBeGreaterThanOrEqual(0);
   });
   it("sends POST query and session_id to /api/v1/query", async () => {
     const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ answer: "Live answer", route: "doc_retrieval", status: "grounded" }) });
     vi.stubGlobal("fetch", fetcher);
     await queryBackend(DEFAULT_SETTINGS, "org_alpha", "PTO policy?", "session-123");
-    expect(fetcher.mock.calls[0][0]).toBe("http://localhost:8000/api/v1/query");
-    expect(fetcher.mock.calls[0][1]).toMatchObject({ method: "POST", headers: { "X-Organization-Id": "org_alpha", "Content-Type": "application/json" }, body: '{"query":"PTO policy?","session_id":"session-123"}' });
+    expect(fetcher.mock.calls[0]?.[0]).toBe("http://localhost:8000/api/v1/query");
+    expect(fetcher.mock.calls[0]?.[1]).toMatchObject({ method: "POST", headers: { "X-Organization-Id": "org_alpha", "Content-Type": "application/json" }, body: '{"query":"PTO policy?","session_id":"session-123"}' });
   });
   it("supports the /query alternative", () => {
     expect(curlExample({ ...DEFAULT_SETTINGS, queryPath: "/query" }, "org_alpha")).toContain("http://localhost:8000/query");
@@ -43,7 +43,7 @@ describe("Backend configuration and contract", () => {
   it("preserves live citations and reasoning trace", () => {
     const result = normalizeAnswer({ answer: "Answer", route: "doc_retrieval", status: "grounded", citations: [{ filename: "policy.pdf", page: 3, snippet: "Evidence" }], reasoning_trace: ["Retrieved policy"] }, 23);
     expect(result.citations[0]).toMatchObject({ docName: "policy.pdf", page: 3, snippet: "Evidence" });
-    expect(result.trace[0].detail).toBe("Retrieved policy");
+    expect(result.trace[0]?.detail).toBe("Retrieved policy");
   });
   it("rejects unreachable endpoints without a simulated answer", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
