@@ -171,11 +171,13 @@ function AssistantMessage({ msg }: { msg: Msg }) {
     );
   }
   if (msg.error) return <div role="alert" className="rounded border border-warning/40 bg-warning/5 p-4">
-    <h2 className="flex items-center gap-2 text-sm font-semibold"><TriangleAlert className="h-4 w-4 text-warning" />Local backend unavailable</h2>
-    <p className="mt-2 break-words text-xs text-muted-foreground">{msg.error} No backend answer was returned.</p>
-    <p className="mt-2 text-xs leading-relaxed">Start your FastAPI adapter, then check /health in Backend Settings. Allow this app’s origin in CORS and browser local-network access. Ollama needs an adapter exposing the query contract.</p>
-    <code className="mt-3 block overflow-x-auto font-mono text-xs">uvicorn main:app --host 127.0.0.1 --port 8000</code>
-    <div className="mt-3 flex flex-wrap gap-2"><Button asChild variant="outline" size="sm"><Link to="/settings">Backend Settings</Link></Button><Button size="sm" onClick={() => backend.setSettings({ ...backend.settings, mode: "simulated" })}><RotateCcw /> Switch to Simulated</Button></div>
+    <h2 className="flex items-center gap-2 text-sm font-semibold"><TriangleAlert className="h-4 w-4 text-warning" />{msg.live ? "Local backend unavailable" : "Assistant request failed"}</h2>
+    <p className="mt-2 break-words text-xs text-muted-foreground">{msg.error} No answer was returned.</p>
+    {msg.live && <>
+      <p className="mt-2 text-xs leading-relaxed">Start your FastAPI adapter, then check /health in Backend Settings. Allow this app’s origin in CORS and browser local-network access. Ollama needs an adapter exposing the query contract.</p>
+      <code className="mt-3 block overflow-x-auto font-mono text-xs">uvicorn main:app --host 127.0.0.1 --port 8000</code>
+    </>}
+    <div className="mt-3 flex flex-wrap gap-2"><Button asChild variant="outline" size="sm"><Link to="/settings">Backend Settings</Link></Button>{msg.live && <Button size="sm" onClick={() => backend.setSettings({ ...backend.settings, mode: "simulated" })}><RotateCcw /> Switch to Cloud RAG</Button>}</div>
   </div>;
   const a = msg.answer;
   if (!a) return null;
