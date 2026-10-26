@@ -1,10 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { CHUNKS, INITIAL_AUDIT, INITIAL_DOCS, ORGS, countTokens, type AuditEntry, type Doc, type Org, type Role } from "./mock-data";
 import type { AgentAnswer } from "./agent";
+import { useBackendSettings } from "@/hooks/use-backend-settings";
 
 export interface QueryLog { orgId: string; route: AgentAnswer["route"]; latencyMs: number; verification: AgentAnswer["verification"]["kind"]; retries: number }
 
 interface Store {
+  backend: ReturnType<typeof useBackendSettings>;
   org: Org;
   orgs: Org[];
   setOrgId: (id: string) => void;
@@ -43,6 +45,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [audit, setAudit] = useState<AuditEntry[]>(INITIAL_AUDIT);
   const [queries, setQueries] = useState<QueryLog[]>(seedQueries);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const backend = useBackendSettings(orgId);
 
   const baseOrg = ORGS.find((o) => o.id === orgId)!;
   const role = roleOverride[orgId] ?? baseOrg.role;
@@ -100,6 +103,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [orgId, user, log, simulate]);
 
   const value = useMemo<Store>(() => ({
+    backend,
     org, orgs: ORGS.map((o) => ({ ...o, role: roleOverride[o.id] ?? o.role })),
     setOrgId: (id) => { setOrgIdRaw(id); },
     role, setRole: (r) => { setRoleOverride((m) => ({ ...m, [orgId]: r })); log("role.switch", `Preview as ${r}`); },
@@ -113,7 +117,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     recordQuery: (q) => setQueries((x) => [...x, q]),
     theme, toggleTheme: () => setTheme((t) => (t === "dark" ? "light" : "dark")),
     user,
-  }), [org.id, role, docs, audit, queries, theme, uploadFiles, log, simulate, orgId, roleOverride, user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }), [backend, org.id, role, docs, audit, queries, theme, uploadFiles, log, simulate, orgId, roleOverride, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
