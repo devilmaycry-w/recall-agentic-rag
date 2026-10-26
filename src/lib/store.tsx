@@ -23,7 +23,10 @@ interface Store {
   user: string;
 }
 
-const Ctx = createContext<Store | null>(null);
+// Keep one context instance across hot reloads; a re-created context makes
+// consumers lose the provider that was mounted with the old one.
+const g = globalThis as unknown as { __recallStoreCtx?: React.Context<Store | null> };
+const Ctx = (g.__recallStoreCtx ??= createContext<Store | null>(null));
 
 // Seed some historical queries so analytics are populated
 const seedQueries: QueryLog[] = Array.from({ length: 240 }, (_, i) => {
