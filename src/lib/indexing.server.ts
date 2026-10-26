@@ -59,7 +59,7 @@ export async function embedChunks(texts: string[]): Promise<number[][]> {
     const res = await fetch(endpoint.url, {
       method: "POST",
       headers: { Authorization: `Bearer ${endpoint.key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: endpoint.model, input: batch }),
+      body: JSON.stringify({ model: endpoint.model, input: batch, dimensions: 1536 }),
     });
     if (!res.ok) throw new Error(`Embedding provider returned HTTP ${res.status}.`);
     const json = (await res.json()) as { data?: { embedding: number[] }[] };
