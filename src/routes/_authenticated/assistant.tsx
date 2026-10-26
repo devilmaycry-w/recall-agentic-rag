@@ -48,12 +48,12 @@ function Chat() {
     sessionRef.current = crypto.randomUUID();
     setMsgs([]);
     return () => { requestRef.current?.abort(); requestRef.current = null; };
-  }, [org.id, backend.settings.mode, backend.settings.url, backend.settings.queryPath, backend.settings.organizationHeader]);
+  }, [org?.id, backend.settings.mode, backend.settings.url, backend.settings.queryPath, backend.settings.organizationHeader]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
 
   const busy = msgs.some((m) => m.pending);
   const send = async (q: string) => {
-    if (!q.trim() || busy || sendingRef.current || !backend.ready) return;
+    if (!q.trim() || busy || sendingRef.current || !backend.ready || !org) return;
     sendingRef.current = true;
     const controller = new AbortController();
     requestRef.current = controller;
@@ -85,7 +85,7 @@ function Chat() {
         <div className="mx-auto max-w-3xl px-4 py-8">
           {msgs.length === 0 && (
             <div className="pt-10">
-              <div className="font-mono text-xs text-primary">// {org.name}</div>
+              <div className="font-mono text-xs text-primary">// {org?.name}</div>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight">Ask your organization's knowledge.</h1>
               <p className="mt-2 max-w-xl text-sm text-muted-foreground">Every answer is routed to the right tool, graded for relevance, and checked for groundedness before you see it. If the evidence isn't there, the assistant says so.</p>
               <div className="mt-8 grid gap-2 sm:grid-cols-2">
@@ -123,7 +123,7 @@ function Chat() {
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
           </Button>
         </form>
-        <p className="mx-auto mt-1.5 max-w-3xl break-words font-mono text-[10px] text-muted-foreground">{backend.settings.mode === "custom" ? `Live Local Backend · ${backend.settings.url} · ${org.id}` : `Prototype · simulated agent · ${docs.filter((d) => d.status === "Indexed").length} indexed documents in this workspace`}</p>
+        <p className="mx-auto mt-1.5 max-w-3xl break-words font-mono text-[10px] text-muted-foreground">{backend.settings.mode === "custom" ? `Live Local Backend · ${backend.settings.url} · ${org?.id}` : `Prototype · simulated agent · ${docs.filter((d) => d.status === "Indexed").length} indexed documents in this workspace`}</p>
       </div>
     </div>
   );
