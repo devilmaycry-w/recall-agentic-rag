@@ -3,12 +3,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AgentAnswer, Citation, TraceStep, Verification } from "./agent";
 import { embedChunks } from "./indexing.server";
+import { needsClarification, type ConversationTurn } from "./routing";
 
 const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
 const FAST_MODEL = "openai/gpt-4o-mini"; // routing, grading, verification, rewriting
 const ANSWER_MODEL = "openai/gpt-4o"; // final answer generation
 const MAX_RETRIES = 2;
 const MIN_SCORE = 0.5;
+const MAX_HISTORY_TURNS = 6;
 
 interface MatchedChunk {
   chunk_id: string;
