@@ -71,7 +71,7 @@ export async function queryBackend(settings: BackendSettings, orgId: string, que
 
 const shellQuote = (value: string) => `'${value.replace(/'/g, `'"'"'`)}'`;
 export function curlExample(settings: BackendSettings, orgId: string) {
-  return `curl -X POST ${shellQuote(backendUrl(settings.url, settings.queryPath))} \\\n+  -H 'Content-Type: application/json'${settings.organizationHeader ? ` \\\n+  -H ${shellQuote(`X-Organization-Id: ${orgId}`)}` : ""} \\\n+  -d '${JSON.stringify({ query: "What is our PTO policy?", session_id: "example-session" })}'`;
+  return `curl -X POST ${shellQuote(backendUrl(settings.url, settings.queryPath))} \\\n  -H 'Content-Type: application/json'${settings.organizationHeader ? ` \\\n  -H ${shellQuote(`X-Organization-Id: ${orgId}`)}` : ""} \\\n  -d '${JSON.stringify({ query: "What is our PTO policy?", session_id: "example-session" })}'`;
 }
 
 export function fastApiExample(origin: string) {
