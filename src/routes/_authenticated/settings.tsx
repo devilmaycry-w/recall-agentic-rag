@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Check, Copy, Loader2, PlugZap } from "lucide-react";
+import { Check, Copy, KeyRound, Loader2, PlugZap, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/app-shell";
 import { BackendStatus } from "@/components/backend-status";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useStore } from "@/lib/store";
 import { curlExample, fastApiExample } from "@/lib/backend";
+import { AI_PROVIDERS, AI_PROVIDER_IDS, type AiProviderId } from "@/lib/ai-providers";
+import { clearOrgAiSettings, getOrgAiSettings, saveOrgAiSettings } from "@/lib/chat.functions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [
@@ -68,6 +70,7 @@ function Settings() {
         {storageError && <p role="alert" className="text-xs text-warning">Browser storage is unavailable. These settings will not survive a reload.</p>}
         <p className="text-xs text-muted-foreground">Only Assistant queries use this connection. Documents, SQL Tool and benchmark data remain simulated. Localhost refers to this browser’s machine.</p>
       </section>
+      <AiProviderSection />
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3"><h2 className="text-base font-semibold">Query request</h2><Button variant="outline" size="sm" onClick={() => copy(curl, "cURL")}>{copied === "cURL" ? <Check /> : <Copy />} Copy cURL</Button></div>
         <pre className="overflow-x-auto rounded border border-border bg-muted p-4 font-mono text-xs leading-relaxed">{curl}</pre>
