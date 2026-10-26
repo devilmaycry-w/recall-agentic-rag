@@ -1,9 +1,10 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Activity, BarChart3, Database, FileText, MessageSquare, Moon, ShieldCheck, Sun, Menu, X } from "lucide-react";
+import { Activity, BarChart3, Database, FileText, MessageSquare, Moon, ShieldCheck, Sun, Menu, X, Settings2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { can, useStore } from "@/lib/store";
 import type { Role } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { BackendStatus } from "@/components/backend-status";
 
 const NAV = [
   { to: "/", label: "Assistant", icon: MessageSquare, gate: () => true },
@@ -11,6 +12,7 @@ const NAV = [
   { to: "/sql", label: "SQL Tool", icon: Database, gate: () => true },
   { to: "/analytics", label: "Analytics & Evals", icon: BarChart3, gate: can.viewAnalytics },
   { to: "/audit", label: "Audit Log", icon: Activity, gate: can.viewAudit },
+  { to: "/settings", label: "Backend Settings", icon: Settings2, gate: () => true },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -63,6 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         })}
       </nav>
       <div className="border-t border-sidebar-border p-3">
+        <Link to="/settings" onClick={() => setOpen(false)} className="mb-4 block rounded border border-border px-2 py-2"><BackendStatus /></Link>
         <label className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Your role (preview)</label>
         <select value={role} onChange={(e) => setRole(e.target.value as Role)} className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm">
           {(["Admin", "Knowledge Manager", "Member"] as Role[]).map((r) => <option key={r}>{r}</option>)}

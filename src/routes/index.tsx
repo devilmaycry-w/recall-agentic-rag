@@ -1,10 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, BookOpen, ChevronDown, ChevronRight, CircleCheck, CircleSlash, Database, FileText, HelpCircle, Loader2, RotateCcw, ThumbsDown, ThumbsUp, TriangleAlert, Workflow } from "lucide-react";
 import { toast } from "sonner";
 import { runAgent, type AgentAnswer, type Citation, type RouteKind } from "@/lib/agent";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { queryBackend } from "@/lib/backend";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -20,7 +22,7 @@ export const Route = createFileRoute("/")({
   component: Chat,
 });
 
-interface Msg { id: string; role: "user" | "assistant"; text: string; answer?: AgentAnswer; pending?: boolean }
+interface Msg { id: string; role: "user" | "assistant"; text: string; answer?: AgentAnswer; pending?: boolean; error?: string; live?: boolean }
 
 const SUGGESTIONS = [
   "How many days of PTO do employees accrue per month?",
@@ -32,25 +34,49 @@ const SUGGESTIONS = [
 ];
 
 function Chat() {
-  const { docs, org, recordQuery } = useStore();
+  const { docs, org, recordQuery, backend } = useStore();
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { setMsgs([]); }, [org.id]);
+  const requestRef = useRef<AbortController | null>(null);
+  const sessionRef = useRef("");
+  const sendingRef = useRef(false);
+  useEffect(() => {
+    requestRef.current?.abort();
+    requestRef.current = null;
+    sendingRef.current = false;
+    sessionRef.current = crypto.randomUUID();
+    setMsgs([]);
+    return () => { requestRef.current?.abort(); requestRef.current = null; };
+  }, [org.id, backend.settings.mode, backend.settings.url, backend.settings.queryPath, backend.settings.organizationHeader]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
 
   const busy = msgs.some((m) => m.pending);
-  const send = (q: string) => {
-    if (!q.trim() || busy) return;
+  const send = async (q: string) => {
+    if (!q.trim() || busy || sendingRef.current || !backend.ready) return;
+    sendingRef.current = true;
+    const controller = new AbortController();
+    requestRef.current = controller;
     const id = crypto.randomUUID();
-    setMsgs((m) => [...m, { id: id + "u", role: "user", text: q }, { id, role: "assistant", text: "", pending: true }]);
+    const live = backend.settings.mode === "custom";
+    setMsgs((m) => [...m, { id: id + "u", role: "user", text: q }, { id, role: "assistant", text: "", pending: true, live }]);
     setInput("");
-    const answer = runAgent(q, docs);
-    setTimeout(() => {
+    const timeout = setTimeout(() => controller.abort(), 60000);
+    try {
+      const answer = live ? await queryBackend(backend.settings, org.id, q, sessionRef.current, controller.signal) : runAgent(q, docs);
+      if (!live) await new Promise((resolve) => setTimeout(resolve, Math.min(2200, 600 + answer.latencyMs / 2)));
+      if (requestRef.current !== controller) return;
       setMsgs((m) => m.map((x) => (x.id === id ? { ...x, pending: false, text: answer.content, answer } : x)));
       const v = answer.verification;
       recordQuery({ orgId: org.id, route: answer.route, latencyMs: answer.latencyMs, verification: v.kind, retries: v.kind === "Corrected" ? v.retry : v.kind === "Abstained" ? 2 : 0 });
-    }, Math.min(2200, 600 + answer.latencyMs / 2));
+    } catch (error) {
+      if (requestRef.current !== controller) return;
+      const detail = controller.signal.aborted ? "The backend took longer than 60 seconds to respond." : error instanceof Error ? error.message : "Connection failed.";
+      setMsgs((m) => m.map((x) => x.id === id ? { ...x, pending: false, error: detail } : x));
+    } finally {
+      clearTimeout(timeout);
+      if (requestRef.current === controller) sendingRef.current = false;
+    }
   };
 
   return (
@@ -64,9 +90,9 @@ function Chat() {
               <p className="mt-2 max-w-xl text-sm text-muted-foreground">Every answer is routed to the right tool, graded for relevance, and checked for groundedness before you see it. If the evidence isn't there, the assistant says so.</p>
               <div className="mt-8 grid gap-2 sm:grid-cols-2">
                 {SUGGESTIONS.map((s) => (
-                  <button key={s} onClick={() => send(s)} className="rounded border border-border bg-card px-3 py-2.5 text-left text-sm text-card-foreground transition-colors hover:border-primary/50">
+                  <Button variant="outline" disabled={!backend.ready} key={s} onClick={() => send(s)} className="h-auto justify-start whitespace-normal rounded border border-border bg-card px-3 py-2.5 text-left text-sm text-card-foreground transition-colors hover:border-primary/50">
                     {s}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -93,11 +119,11 @@ function Chat() {
             placeholder="Ask about policies, product specs, or sales numbers…"
             className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-muted-foreground"
           />
-          <button type="submit" disabled={!input.trim() || busy} aria-label="Send" className="grid h-9 w-9 shrink-0 place-items-center rounded bg-primary text-primary-foreground disabled:opacity-40">
+          <Button size="icon" type="submit" disabled={!backend.ready || !input.trim() || busy} aria-label="Send" className="grid h-9 w-9 shrink-0 place-items-center rounded bg-primary text-primary-foreground disabled:opacity-40">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
-          </button>
+          </Button>
         </form>
-        <p className="mx-auto mt-1.5 max-w-3xl font-mono text-[10px] text-muted-foreground">Prototype · simulated agent · answers drawn from {docs.filter((d) => d.status === "Indexed").length} indexed documents in this workspace only</p>
+        <p className="mx-auto mt-1.5 max-w-3xl break-words font-mono text-[10px] text-muted-foreground">{backend.settings.mode === "custom" ? `Live Local Backend · ${backend.settings.url} · ${org.id}` : `Prototype · simulated agent · ${docs.filter((d) => d.status === "Indexed").length} indexed documents in this workspace`}</p>
       </div>
     </div>
   );
@@ -133,16 +159,25 @@ function AssistantMessage({ msg }: { msg: Msg }) {
   const [fb, setFb] = useState<"up" | "down" | null>(null);
   const [comment, setComment] = useState("");
   const [sent, setSent] = useState(false);
-  const { log } = useStore();
+  const { log, backend } = useStore();
 
   if (msg.pending) {
     return (
       <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> routing → retrieving → grading → verifying…
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> {msg.live ? "Waiting for local backend…" : "routing → retrieving → grading → verifying…"}
       </div>
     );
   }
-  const a = msg.answer!;
+  if (msg.error) return <div role="alert" className="rounded border border-warning/40 bg-warning/5 p-4">
+    <h2 className="flex items-center gap-2 text-sm font-semibold"><TriangleAlert className="h-4 w-4 text-warning" />Local backend unavailable</h2>
+    <p className="mt-2 break-words text-xs text-muted-foreground">{msg.error} No backend answer was returned.</p>
+    <p className="mt-2 text-xs leading-relaxed">Start your FastAPI adapter, then check /health in Backend Settings. Allow this app’s origin in CORS and browser local-network access. Ollama needs an adapter exposing the query contract.</p>
+    <code className="mt-3 block overflow-x-auto font-mono text-xs">uvicorn main:app --host 127.0.0.1 --port 8000</code>
+    <div className="mt-3 flex flex-wrap gap-2"><Button asChild variant="outline" size="sm"><Link to="/settings">Backend Settings</Link></Button><Button size="sm" onClick={() => backend.setSettings({ ...backend.settings, mode: "simulated" })}><RotateCcw /> Switch to Simulated</Button></div>
+  </div>;
+  const a = msg.answer;
+  if (!a) return null;
+  const sql = a.sql;
   const R = ROUTE_STYLE[a.route];
   return (
     <div className="flex gap-3">
@@ -161,7 +196,7 @@ function AssistantMessage({ msg }: { msg: Msg }) {
             <div className="max-h-60 overflow-auto">
               <table className="w-full text-xs">
                 <thead className="bg-card"><tr>{a.sql.columns.map((c) => <th key={c} className="px-3 py-1.5 text-left font-mono font-medium text-muted-foreground">{c}</th>)}</tr></thead>
-                <tbody>{a.sql.rows.map((r, i) => <tr key={i} className="border-t border-border">{a.sql!.columns.map((c) => <td key={c} className="px-3 py-1.5 font-mono">{typeof r[c] === "number" ? (r[c] as number).toLocaleString() : String(r[c])}</td>)}</tr>)}</tbody>
+                <tbody>{a.sql.rows.map((r, i) => <tr key={i} className="border-t border-border">{sql?.columns.map((c) => <td key={c} className="px-3 py-1.5 font-mono">{typeof r[c] === "number" ? (r[c] as number).toLocaleString() : String(r[c])}</td>)}</tr>)}</tbody>
               </table>
             </div>
           </div>
@@ -229,14 +264,14 @@ function CitationRow({ c, i, open, toggle }: { c: Citation; i: number; open: boo
         <span className="font-mono text-muted-foreground">p.{c.page}</span>
         <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground">
           <span className="h-1 w-12 overflow-hidden rounded bg-muted"><span className="block h-full bg-primary" style={{ width: `${c.confidence * 100}%` }} /></span>
-          {(c.confidence * 100).toFixed(0)}%
+          {c.confidence > 0 ? `${(c.confidence * 100).toFixed(0)}%` : "Source"}
         </span>
         {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
       </button>
       {open && (
         <div className="border-t border-border px-3 py-2.5">
           <blockquote className="border-l-2 border-primary pl-3 text-xs leading-relaxed">{c.snippet}</blockquote>
-          <div className="mt-2 font-mono text-[10px] text-muted-foreground">chunk {c.chunkId} · confidence {c.confidence.toFixed(2)}</div>
+          {c.confidence > 0 && <div className="mt-2 font-mono text-[10px] text-muted-foreground">chunk {c.chunkId} · confidence {c.confidence.toFixed(2)}</div>}
         </div>
       )}
     </div>
