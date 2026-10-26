@@ -27,7 +27,7 @@ export interface Doc {
   progress: number;
   uploadedBy: string;
   uploadedAt: string;
-  error?: string;
+  error?: string | undefined;
 }
 
 export const ORGS: Org[] = [

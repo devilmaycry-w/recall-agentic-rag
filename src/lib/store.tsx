@@ -30,11 +30,11 @@ const seedQueries: QueryLog[] = Array.from({ length: 240 }, (_, i) => {
   const k = (i * 7919) % 100;
   const route = k < 62 ? "Document Retrieval" : k < 88 ? "Read-Only SQL" : "Clarification";
   const v = k % 11 === 0 ? "Abstained" : k % 4 === 0 ? "Corrected" : "Grounded";
-  return { orgId: ORGS[i % 3].id, route, verification: v, retries: v === "Corrected" ? (k % 3 === 0 ? 2 : 1) : v === "Abstained" ? 2 : 0, latencyMs: 900 + ((k * 37) % 1800) } as QueryLog;
+  return { orgId: ORGS[i % 3]!.id, route, verification: v, retries: v === "Corrected" ? (k % 3 === 0 ? 2 : 1) : v === "Abstained" ? 2 : 0, latencyMs: 900 + ((k * 37) % 1800) } as QueryLog;
 });
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [orgId, setOrgIdRaw] = useState(ORGS[0].id);
+  const [orgId, setOrgIdRaw] = useState(ORGS[0]!.id);
   const [roleOverride, setRoleOverride] = useState<Record<string, Role>>({});
   const [docs, setDocs] = useState<Doc[]>(INITIAL_DOCS);
   const [audit, setAudit] = useState<AuditEntry[]>(INITIAL_AUDIT);
