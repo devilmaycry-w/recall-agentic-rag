@@ -276,6 +276,21 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      match_document_chunks: {
+        Args: {
+          match_count?: number
+          p_org_id: string
+          query_embedding: string
+        }
+        Returns: {
+          chunk_id: string
+          content: string
+          document_id: string
+          document_name: string
+          page: number
+          similarity: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "knowledge_manager" | "member"
