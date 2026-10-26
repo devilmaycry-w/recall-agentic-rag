@@ -4,7 +4,19 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const askAssistant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ orgId: z.string().uuid(), query: z.string().min(1).max(4000), sessionId: z.string().max(64).optional() }).parse(data))
+  .inputValidator((data) =>
+    z
+      .object({
+        orgId: z.string().uuid(),
+        query: z.string().min(1).max(4000),
+        sessionId: z.string().max(64).optional(),
+        history: z
+          .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(2000) }))
+          .max(8)
+          .optional(),
+      })
+      .parse(data),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     // Membership check through the caller's own RLS-scoped client.
@@ -17,7 +29,7 @@ export const askAssistant = createServerFn({ method: "POST" })
     if (!membership) throw new Error("You are not a member of this workspace.");
 
     const { runRag } = await import("./rag.server");
-    const answer = await runRag(supabase, data.orgId, data.query);
+    const answer = await runRag(supabase, data.orgId, data.query, data.history ?? []);
 
     const ROUTE_ENUM = { "Document Retrieval": "doc_retrieval", "Read-Only SQL": "sql_query", Clarification: "clarify" } as const;
     const verification = answer.verification.kind.toLowerCase() as "grounded" | "corrected" | "abstained";

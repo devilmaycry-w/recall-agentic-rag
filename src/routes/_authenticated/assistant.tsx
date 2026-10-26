@@ -60,13 +60,19 @@ function Chat() {
     requestRef.current = controller;
     const id = crypto.randomUUID();
     const live = backend.settings.mode === "custom";
+    // Recent completed turns give the server conversation context for
+    // routing and retrieval of follow-ups like "from projects".
+    const history = msgs
+      .filter((m) => !m.pending && !m.error && m.text.trim())
+      .slice(-6)
+      .map((m) => ({ role: m.role, content: m.text.slice(0, 2000) }));
     setMsgs((m) => [...m, { id: id + "u", role: "user", text: q }, { id, role: "assistant", text: "", pending: true, live }]);
     setInput("");
     const timeout = setTimeout(() => controller.abort(), 60000);
     try {
       const answer = live
         ? await queryBackend(backend.settings, org.id, q, sessionRef.current, controller.signal)
-        : await askAssistant({ data: { orgId: org.id, query: q, sessionId: sessionRef.current } });
+        : await askAssistant({ data: { orgId: org.id, query: q, sessionId: sessionRef.current, history } });
       if (requestRef.current !== controller) return;
       setMsgs((m) => m.map((x) => (x.id === id ? { ...x, pending: false, text: answer.content, answer } : x)));
       const v = answer.verification;
