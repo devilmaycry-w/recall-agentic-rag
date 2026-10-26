@@ -150,9 +150,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </header>
         )}
         <main className="min-h-0 flex-1 overflow-y-auto">
-          {!sessionReady || (user && !org && orgs.length === 0 && !sessionReady) ? null : !org ? (
-            sessionReady ? <CreateWorkspace /> : null
-          ) : children}
+          {!sessionReady ? null : !org ? <CreateWorkspace /> : children}
         </main>
       </div>
     </div>
