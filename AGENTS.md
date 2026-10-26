@@ -9,4 +9,6 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- The app is a front-end prototype: all tenant data, the agent (src/lib/agent.ts) and the SQL engine (src/lib/sql.ts) are simulated client-side in src/lib/store.tsx — keeps the demo self-contained until a real backend is requested.
+- Tenant documents, SQL tool and seeded analytics remain a client-side prototype; Assistant alone can use a user-configured external backend so other demo views are not misrepresented as live.
+- Local backend requests run directly in browser event handlers, never through a hosted proxy; localhost must refer to the user's machine. Settings alone persist in local storage, loaded after hydration.
+- The existing StoreProvider owns backend settings and status; preserve its hot-reload-stable context so consumers cannot lose their provider.

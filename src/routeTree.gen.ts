@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as DocumentsRouteImport } from './routes/documents'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SqlRouteImport } from './routes/sql'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,6 +36,11 @@ const DocumentsRoute = DocumentsRouteImport.update({
   path: '/documents',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SqlRoute = SqlRouteImport.update({
   id: '/sql',
   path: '/sql',
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/audit': typeof AuditRoute
   '/documents': typeof DocumentsRoute
+  '/settings': typeof SettingsRoute
   '/sql': typeof SqlRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/audit': typeof AuditRoute
   '/documents': typeof DocumentsRoute
+  '/settings': typeof SettingsRoute
   '/sql': typeof SqlRoute
 }
 export interface FileRoutesById {
@@ -61,14 +69,22 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/audit': typeof AuditRoute
   '/documents': typeof DocumentsRoute
+  '/settings': typeof SettingsRoute
   '/sql': typeof SqlRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/analytics' | '/audit' | '/documents' | '/sql'
+  fullPaths: '/' | '/analytics' | '/audit' | '/documents' | '/settings' | '/sql'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analytics' | '/audit' | '/documents' | '/sql'
-  id: '__root__' | '/' | '/analytics' | '/audit' | '/documents' | '/sql'
+  to: '/' | '/analytics' | '/audit' | '/documents' | '/settings' | '/sql'
+  id:
+    | '__root__'
+    | '/'
+    | '/analytics'
+    | '/audit'
+    | '/documents'
+    | '/settings'
+    | '/sql'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,6 +92,7 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   AuditRoute: typeof AuditRoute
   DocumentsRoute: typeof DocumentsRoute
+  SettingsRoute: typeof SettingsRoute
   SqlRoute: typeof SqlRoute
 }
 
@@ -109,6 +126,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocumentsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sql': {
       id: '/sql'
       path: '/sql'
@@ -124,6 +148,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   AuditRoute: AuditRoute,
   DocumentsRoute: DocumentsRoute,
+  SettingsRoute: SettingsRoute,
   SqlRoute: SqlRoute,
 }
 export const routeTree = rootRouteImport
